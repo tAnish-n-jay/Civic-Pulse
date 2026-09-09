@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
 
 async def analyze_issue(title: str, description: str) -> dict:
     prompt = f"""You are a civic issue classifier. Given a citizen's issue report, return ONLY valid JSON with these exact fields:
@@ -22,18 +22,28 @@ Issue Description: {description}
 Return only JSON. No explanation. No markdown. No backticks."""
 
     payload = {
-        "contents": [{"parts": [{"text": prompt}]}]
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {
+            "temperature": 0,
+            "thinkingConfig": {"thinkingBudget": 0}  # disable thinking mode
+        }
     }
 
-    async with httpx.AsyncClient(timeout=15) as client:
+    async with httpx.AsyncClient(timeout=30) as client:
         response = await client.post(GEMINI_URL, json=payload)
         response.raise_for_status()
         data = response.json()
 
-    raw_text = data["candidates"][0]["content"]["parts"][0]["text"].strip()
+    # Extract text — handle both thinking and non-thinking responses
+    parts = data["candidates"][0]["content"]["parts"]
+    raw_text = ""
+    for part in parts:
+        if "text" in part:
+            raw_text = part["text"].strip()
+            break
 
-    # Strip markdown fences if Gemini wraps in ```json
-    if raw_text.startswith("```"):
+    # Strip markdown fences if present
+    if "```" in raw_text:
         raw_text = raw_text.split("```")[1]
         if raw_text.startswith("json"):
             raw_text = raw_text[4:]
