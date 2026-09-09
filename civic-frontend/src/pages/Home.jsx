@@ -14,6 +14,7 @@ export default function Home() {
         <div style={{ padding: 32 }}>
             <h2>Welcome, {profile?.name || 'Citizen'}</h2>
             <p>Role: <strong>{profile?.role}</strong></p>
+            <button onClick={() => navigate('/report')}>+ Report Issue</button>
             <button onClick={handleLogout}>Logout</button>
         </div>
     )
