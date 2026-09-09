@@ -17,3 +17,5 @@ app.include_router(health_router)
 @app.get("/")
 def root():
     return {"message": "CivicPulse backend is live"}
+from routes.issues import router as issues_router
+app.include_router(issues_router)
