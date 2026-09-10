@@ -21,3 +21,16 @@ def calculate_impact_score(severity: int, upvotes: int, category: str, created_a
 
     score = (severity * 20) + (upvotes * 3) + (recency_score * 10) + (category_weight * 15)
     return round(score, 2)
+
+def assign_authority(supabase, department: str):
+    if not department:
+        return None
+    result = (
+        supabase.table("users")
+        .select("id")
+        .eq("role", "authority")
+        .eq("department", department)
+        .limit(1)
+        .execute()
+    )
+    return result.data[0]["id"] if result.data else None

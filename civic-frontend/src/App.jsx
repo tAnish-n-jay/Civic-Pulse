@@ -3,6 +3,9 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import Login from './pages/Login'
 import ReportIssue from './pages/ReportIssue'
 import Dashboard from './pages/Dashboard'
+import AuthorityDashboard from './pages/AuthorityDashboard'
+
+
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -16,6 +19,7 @@ function AppRoutes() {
       <Route path="/login" element={<Login />} />
       <Route path="/report" element={<ProtectedRoute><ReportIssue /></ProtectedRoute>} />
       <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path="/authority" element={<ProtectedRoute><AuthorityDashboard /></ProtectedRoute>} />
     </Routes>
   )
 }
