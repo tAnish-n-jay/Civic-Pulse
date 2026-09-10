@@ -206,13 +206,13 @@ When an authority opens an issue, a "Draft Update" button sends the issue contex
 
 **Goal:** Skeleton running, DB ready, auth working.
 
-- [ ] Init React app with Vite
-- [ ] Init FastAPI project with folder structure (`/routes`, `/models`, `/services`, `/ai`)
-- [ ] Create Supabase project → set up all tables from schema above
-- [ ] Configure Supabase Auth with roles (`citizen`, `authority`, `representative`)
-- [ ] Set up `.env` for Gemini API key, Supabase URL + keys
-- [ ] Basic FastAPI health check route → confirm frontend can reach backend
-- [ ] Set up Supabase Storage bucket for issue photos
+- [.] Init React app with Vite
+- [.] Init FastAPI project with folder structure (`/routes`, `/models`, `/services`, `/ai`)
+- [.] Create Supabase project → set up all tables from schema above
+- [.] Configure Supabase Auth with roles (`citizen`, `authority`, `representative`)
+- [.] Set up `.env` for Gemini API key, Supabase URL + keys
+- [.] Basic FastAPI health check route → confirm frontend can reach backend
+- [.] Set up Supabase Storage bucket for issue photos
 
 **Deliverable:** Login page works, roles exist, DB tables are live.
 

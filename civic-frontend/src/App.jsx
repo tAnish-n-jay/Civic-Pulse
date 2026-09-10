@@ -4,7 +4,8 @@ import Login from './pages/Login'
 import ReportIssue from './pages/ReportIssue'
 import Dashboard from './pages/Dashboard'
 import AuthorityDashboard from './pages/AuthorityDashboard'
-
+import IssueDetail from './pages/IssueDetail'
+import Accountability from './pages/Accountability'
 
 
 function ProtectedRoute({ children }) {
@@ -20,6 +21,8 @@ function AppRoutes() {
       <Route path="/report" element={<ProtectedRoute><ReportIssue /></ProtectedRoute>} />
       <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/authority" element={<ProtectedRoute><AuthorityDashboard /></ProtectedRoute>} />
+      <Route path="/issue/:id" element={<ProtectedRoute><IssueDetail /></ProtectedRoute>} />
+      <Route path="/accountability" element={<Accountability />} />
     </Routes>
   )
 }

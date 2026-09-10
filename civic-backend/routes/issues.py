@@ -37,7 +37,6 @@ def get_current_user(authorization: str = Header(...)):
             audience="authenticated",
         )
     except jwt.PyJWTError as e:
-        print(f"DEBUG - JWT decode failed: {type(e).__name__}: {str(e)}")
         raise HTTPException(status_code=401, detail="Invalid or expired token")
     return {"id": payload["sub"], "role": payload.get("user_metadata", {}).get("role")}
 
@@ -58,13 +57,11 @@ async def create_issue(
     reported_by: str = Form(...),
     photo: Optional[UploadFile] = File(None)
 ):
-    # 1. Call Gemini for AI analysis
     try:
         ai_result = await analyze_issue(title, description)
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"AI analysis failed: {str(e)}")
 
-    # 2. Upload photo if provided
     photo_url = None
     if photo:
         try:
@@ -73,9 +70,8 @@ async def create_issue(
             supabase.storage.from_("issue-photos").upload(filename, contents, {"content-type": photo.content_type})
             photo_url = supabase.storage.from_("issue-photos").get_public_url(filename)
         except Exception:
-            photo_url = None  # Don't fail if photo upload fails
+            photo_url = None
 
-    # 3. Calculate initial impact score
     created_at = datetime.now(timezone.utc)
     impact_score = calculate_impact_score(
         severity=ai_result.get("severity", 3),
@@ -84,10 +80,8 @@ async def create_issue(
         created_at=created_at
     )
 
-    # 4. Auto-assign an authority based on department
     assigned_authority_id = assign_authority(supabase, ai_result.get("assigned_department"))
 
-    # 5. Insert into Supabase
     issue_data = {
         "title": title,
         "description": description,
@@ -108,7 +102,6 @@ async def create_issue(
     }
 
     result = supabase.table("issues").insert(issue_data).execute()
-
     return {
         "issue": result.data[0],
         "ai_analysis": ai_result,
@@ -123,17 +116,17 @@ def get_issues(
     area: Optional[str] = Query(None)
 ):
     query = supabase.table("issues").select("*, reporter:users!issues_reported_by_fkey(name)").order("impact_score", desc=True)
-
     if category:
         query = query.eq("category", category)
     if status:
         query = query.eq("status", status)
     if area:
         query = query.ilike("location_text", f"%{area}%")
-
     result = query.execute()
     return {"issues": result.data}
 
+
+# ── IMPORTANT: specific routes BEFORE /{issue_id} ──
 
 @router.get("/authority/issues")
 def get_authority_issues(user: dict = Depends(require_authority)):
@@ -145,32 +138,19 @@ def get_authority_issues(user: dict = Depends(require_authority)):
     return {"issues": result.data}
 
 
-@router.get("/{issue_id}")
-def get_issue(issue_id: str):
-    result = supabase.table("issues").select("*").eq("id", issue_id).single().execute()
-    if not result.data:
-        raise HTTPException(status_code=404, detail="Issue not found")
-    return {"issue": result.data}
-
-
 @router.post("/{issue_id}/upvote")
 def upvote_issue(issue_id: str, user_id: str = Form(...)):
-    # Check if already upvoted
     existing = supabase.table("upvotes").select("id").eq("issue_id", issue_id).eq("user_id", user_id).execute()
-
     if existing.data:
         raise HTTPException(status_code=400, detail="Already upvoted")
 
-    # Insert upvote
     supabase.table("upvotes").insert({"issue_id": issue_id, "user_id": user_id}).execute()
 
-    # Get current issue
     issue = supabase.table("issues").select("*").eq("id", issue_id).single().execute()
     if not issue.data:
         raise HTTPException(status_code=404, detail="Issue not found")
     issue_data = issue.data
 
-    # Recalculate impact score
     created_at = datetime.fromisoformat(issue_data["created_at"].replace("Z", "+00:00"))
     new_upvotes = issue_data["upvotes"] + 1
     new_score = calculate_impact_score(
@@ -180,7 +160,6 @@ def upvote_issue(issue_id: str, user_id: str = Form(...)):
         created_at=created_at
     )
 
-    # Update issue
     supabase.table("issues").update({
         "upvotes": new_upvotes,
         "impact_score": new_score
@@ -230,13 +209,13 @@ async def draft_update(issue_id: str, user: dict = Depends(require_authority)):
 
     prompt = f"""You are a civic authority officer. Generate a professional, concise status update note for citizens about this civic issue.
 
-        Issue: {d['title']}
-        Category: {d['category']}
-        Current Status: {d['status']}
-        Location: {d['location_text']}
-        AI Summary: {d['ai_summary']}
+Issue: {d['title']}
+Category: {d['category']}
+Current Status: {d['status']}
+Location: {d['location_text']}
+AI Summary: {d['ai_summary']}
 
-        Write ONE short paragraph (2-3 sentences) as if you are the authority updating citizens. Be professional and specific. No markdown."""
+Write ONE short paragraph (2-3 sentences) as if you are the authority updating citizens. Be professional and specific. No markdown."""
 
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
@@ -254,3 +233,40 @@ async def draft_update(issue_id: str, user: dict = Depends(require_authority)):
         raise HTTPException(status_code=502, detail=f"Draft generation failed: {str(e)}")
 
     return {"draft": text.strip()}
+
+
+@router.post("/{issue_id}/verify")
+def verify_issue(
+    issue_id: str,
+    verified_by: str = Form(...),
+    outcome: str = Form(...),
+    comment: str = Form("")
+):
+    existing = supabase.table("verifications") \
+        .select("id").eq("issue_id", issue_id).eq("verified_by", verified_by).execute()
+    if existing.data:
+        raise HTTPException(status_code=400, detail="Already verified")
+
+    supabase.table("verifications").insert({
+        "issue_id": issue_id,
+        "verified_by": verified_by,
+        "outcome": outcome,
+        "comment": comment
+    }).execute()
+
+    return {"success": True, "outcome": outcome}
+
+
+@router.get("/{issue_id}/updates")
+def get_issue_updates(issue_id: str):
+    result = supabase.table("status_updates").select("*") \
+        .eq("issue_id", issue_id).order("created_at").execute()
+    return {"updates": result.data}
+
+
+@router.get("/{issue_id}")
+def get_issue(issue_id: str):
+    result = supabase.table("issues").select("*").eq("id", issue_id).single().execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Issue not found")
+    return result.data

@@ -68,7 +68,7 @@ function IssueCard({ issue, onUpvote }) {
     const [upvotes, setUpvotes] = useState(issue.upvotes)
     const [score, setScore] = useState(issue.impact_score)
     const { user } = useAuth()
-
+    const navigate = useNavigate()
     async function handleUpvote() {
         if (upvoted) return
         try {
@@ -103,7 +103,10 @@ function IssueCard({ issue, onUpvote }) {
                         }}>
                             {issue.category?.toUpperCase()}
                         </span>
-                        <h3 style={{ margin: '8px 0 4px', color: '#f1f5f9', fontSize: 16 }}>{issue.title}</h3>
+                        <h3 onClick={() => navigate(`/issue/${issue.id}`)}
+                            style={{ cursor: 'pointer', color: '#f1f5f9', margin: '8px 0 4px', fontSize: 16 }}>
+                            {issue.title}
+                        </h3>
                         <p style={{ color: '#94a3b8', fontSize: 13, margin: 0 }}>📍 {issue.location_text}</p>
                     </div>
                     {/* Impact Score Badge */}
@@ -190,6 +193,10 @@ export default function Dashboard() {
                     <button onClick={() => navigate('/report')} style={{ padding: '8px 16px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}>
                         + Report Issue
                     </button>
+                    <button onClick={() => navigate('/accountability')}
+                        style={{ padding: '8px 16px', background: '#334155', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}>
+                        🏆 Accountability
+                    </button>
                     <button onClick={logout} style={{ padding: '8px 16px', background: '#334155', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}>
                         Logout
                     </button>
@@ -219,7 +226,7 @@ export default function Dashboard() {
                 <p style={{ textAlign: 'center', color: '#94a3b8' }}>Loading issues...</p>
             ) : issues.length === 0 ? (
                 <p style={{ textAlign: 'center', color: '#94a3b8' }}>No issues found. Be the first to report one!</p>
-            ) : (
+                ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                     {issues.map(issue => (
                         <IssueCard key={issue.id} issue={issue} onUpvote={handleUpvote} />
