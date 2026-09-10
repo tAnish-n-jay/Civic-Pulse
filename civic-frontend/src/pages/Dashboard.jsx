@@ -69,6 +69,7 @@ function IssueCard({ issue, onUpvote }) {
     const [score, setScore] = useState(issue.impact_score)
     const { user } = useAuth()
     const navigate = useNavigate()
+
     async function handleUpvote() {
         if (upvoted) return
         try {
@@ -94,7 +95,6 @@ function IssueCard({ issue, onUpvote }) {
                 display: 'flex', flexDirection: 'column', gap: 12,
                 border: '1px solid #334155'
             }}>
-                {/* Header */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div style={{ flex: 1 }}>
                         <span style={{
@@ -109,7 +109,6 @@ function IssueCard({ issue, onUpvote }) {
                         </h3>
                         <p style={{ color: '#94a3b8', fontSize: 13, margin: 0 }}>📍 {issue.location_text}</p>
                     </div>
-                    {/* Impact Score Badge */}
                     <div onClick={() => setShowBreakdown(true)} style={{
                         cursor: 'pointer', background: '#f59e0b', color: '#000',
                         borderRadius: 12, padding: '6px 14px', textAlign: 'center', minWidth: 70
@@ -119,19 +118,16 @@ function IssueCard({ issue, onUpvote }) {
                     </div>
                 </div>
 
-                {/* Photo */}
                 {issue.photo_url && (
                     <img src={issue.photo_url} alt="issue" style={{ width: '100%', height: 160, objectFit: 'cover', borderRadius: 10 }} />
                 )}
 
-                {/* AI Summary */}
                 {issue.ai_summary && (
                     <p style={{ color: '#cbd5e1', fontSize: 13, margin: 0, fontStyle: 'italic' }}>
                         🤖 {issue.ai_summary}
                     </p>
                 )}
 
-                {/* Footer */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{
                         background: STATUS_COLORS[issue.status] || '#6b7280',
@@ -184,12 +180,19 @@ export default function Dashboard() {
         )
     }
 
+    const isAuthority = profile?.role === 'authority' || profile?.role === 'representative'
+
     return (
         <div style={{ maxWidth: 700, margin: '0 auto', padding: 24, color: '#f1f5f9' }}>
             {/* Navbar */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                 <h1 style={{ margin: 0, fontSize: 22 }}>🏙️ CivicPulse</h1>
-                <div style={{ display: 'flex', gap: 12 }}>
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                    {isAuthority && (
+                        <button onClick={() => navigate('/authority')} style={{ padding: '8px 16px', background: '#059669', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>
+                            🛠️ Authority Portal
+                        </button>
+                    )}
                     <button onClick={() => navigate('/report')} style={{ padding: '8px 16px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}>
                         + Report Issue
                     </button>
@@ -226,7 +229,7 @@ export default function Dashboard() {
                 <p style={{ textAlign: 'center', color: '#94a3b8' }}>Loading issues...</p>
             ) : issues.length === 0 ? (
                 <p style={{ textAlign: 'center', color: '#94a3b8' }}>No issues found. Be the first to report one!</p>
-                ) : (
+            ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                     {issues.map(issue => (
                         <IssueCard key={issue.id} issue={issue} onUpvote={handleUpvote} />
